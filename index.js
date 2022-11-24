@@ -197,6 +197,36 @@ app.delete('/users/allBuyrs/:id' , async(req , res)=>{
 })
 
 
+app.put('/sellers/products/update/:id' , async(req , res)=>{
+   try {
+    const id = req.params.id
+    const filter = {_id: ObjectId(id)}
+    const options = {upsert: true}
+    const updatedDoc ={
+        $set:{
+            status: "sold"
+        }
+    }
+
+    const result = await productsCollection.updateOne(filter , updatedDoc , options)
+    res.send(result)
+   } catch (error) {
+    console.log(error.message);
+   }
+})
+
+
+app.delete('/sellers/product/delete/:id' , async(req , res)=>{
+    try {
+    const  id = req.params.id
+    const query = {_id: ObjectId(id)}
+    const restProducts = await productsCollection.deleteOne(query)
+    res.send(restProducts)
+    } catch (error) {
+         console.log(error.message);
+    }
+})
+
 
 
 
