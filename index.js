@@ -82,11 +82,22 @@ app.get('/categories' , async(req , res)=>{
 app.post('/orders' , async(req , res)=>{
   try {
     const product = req.body;
-    const adededProduct = await ordersCollection.insertOne(product)
-    res.send(adededProduct)
+    const adededOrder = await ordersCollection.insertOne(product)
+    res.send(adededOrder)
   } catch (error) {
     console.log(error.message);
   }
+})
+
+
+app.post('/products' , async(req , res)=>{
+try {
+    const product = req.body
+    const adededProduct = await productsCollection.insertOne(product)
+    res.send(adededProduct)
+} catch (error) {
+     console.log(error.message);
+}
 })
 
 
