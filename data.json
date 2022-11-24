@@ -1,0 +1,11 @@
+[
+    {
+        "categoryName": "luxury car",
+        "categoryID": "1a",
+        "name": "carA",
+        "originalPrice": 100,
+        "resellingPrice": 50,
+        "year-of-buying": "1/02/2015" ,
+        "cndition": "old"
+    }
+]
