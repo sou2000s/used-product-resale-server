@@ -12,7 +12,7 @@ app.use(cors())
 // useProductResale
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.x7kxg5y.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -100,6 +100,44 @@ try {
 }
 })
 
+
+app.get('/users/allSellers' , async(req , res)=>{
+   try {
+    const query = {}
+    const users = await usersCollection.find(query).toArray()
+    const allSellers =  users.filter(user => user.role === "Seller Accout")
+    console.log(allSellers);
+    res.send(allSellers)
+   } catch (error) {
+    console.log(error.message);
+   }
+    
+})
+app.get('/users/allBuyrs' , async(req , res)=>{
+   try {
+    const query = {}
+    const users = await usersCollection.find(query).toArray()
+    const allBuyrs = users.filter(user => user.role === "User")
+   
+    // console.log(allSellers);
+    res.send(allBuyrs)
+   } catch (error) {
+    console.log(error.message);
+   }
+    
+})
+
+
+app.delete('/users/allSellers/:id' , async(req , res)=>{
+    try {
+    const  id = req.params.id
+    const query = {_id: ObjectId(id)}
+    const deletedSeller = await usersCollection.deleteOne(query)
+    res.send(deletedSeller)
+    } catch (error) {
+         console.log(error.message);
+    }
+})
 
 
 
