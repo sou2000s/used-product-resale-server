@@ -21,7 +21,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 const usersCollection = client.db('UsedProductDatabase').collection('users')
 const productsCollection = client.db('UsedProductDatabase').collection('products')
 const categoriesCollection = client.db('UsedProductDatabase').collection('categories')
-
+const ordersCollection = client.db('UsedProductDatabase').collection('orders')
 const dbConnect = async ()=>{
     try {
          await client.connect()
@@ -78,6 +78,16 @@ app.get('/categories' , async(req , res)=>{
    }
 })
 
+
+app.post('/orders' , async(req , res)=>{
+  try {
+    const product = req.body;
+    const adededProduct = await ordersCollection.insertOne(product)
+    res.send(adededProduct)
+  } catch (error) {
+    console.log(error.message);
+  }
+})
 
 
 
