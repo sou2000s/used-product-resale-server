@@ -376,6 +376,17 @@ app.get('/orderProducts/payment/:id' , async(req , res)=>{
 //     }
 // })
 
+app.delete('/sellerProducts/delete' , async(req , res)=>{
+    try {
+        const email = req.query.email
+        const query = {sellerEmail: email}
+        const sellerProducts = await productsCollection.deleteMany(query)
+        res.send(sellerProducts)
+    } catch (error) {
+        console.log(error.message);
+    }
+})
+
 
 
 
