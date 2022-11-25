@@ -3,13 +3,34 @@ require('dotenv').config()
 const app = express()
 const cors = require("cors")
 const port = process.env.PORT || 5000
+const jwt = require('jsonwebtoken')
 
 app.use(express.json())
 app.use(cors())
 
 
-// wP5x0JnhX5NWNig7
-// useProductResale
+
+const verifyJwt = async (req , res , next) =>{
+    try {
+        const authHeader = req.headers.authorization;
+        if(!authHeader){
+            return res.status(401).send({message: "unauthorized access"})
+        }
+        const token = authHeader.split(' ')[1];
+        jwt.verify(token, process.env.ACCESS_TOKEN , (err , decoded)=>{
+            if(err){
+             return res.status(403).send({message: 'forbidden access'})   
+            }
+            req.decoded = decoded
+            next()
+        })
+    } catch (error) {
+        console.log(error.message);
+    }
+}
+
+
+
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -22,6 +43,10 @@ const usersCollection = client.db('UsedProductDatabase').collection('users')
 const productsCollection = client.db('UsedProductDatabase').collection('products')
 const categoriesCollection = client.db('UsedProductDatabase').collection('categories')
 const ordersCollection = client.db('UsedProductDatabase').collection('orders')
+
+
+
+
 const dbConnect = async ()=>{
     try {
          await client.connect()
@@ -30,6 +55,39 @@ const dbConnect = async ()=>{
         console.log(error.message);
     }
 }
+
+
+const verifyAdmin = async(req , res , next)=>{
+    
+    const decodedEmail = req.decoded.email
+    const query = {email: decodedEmail}
+    const user = await usersCollection.findOne(query)
+    if(user?.role !== 'admin'){
+        return res.status(403).send({message: 'forbidden access'})
+    }
+    next()
+    
+
+}
+app.get('/jwt' , async(req , res)=>{
+    try {
+        const email = req.query.email
+        const query = {email: email}
+        const user = await usersCollection.findOne(query)
+        // console.log(data);
+        if(user){
+            const token = jwt.sign(user , process.env.ACCESS_TOKEN , {expiresIn: '1d'})
+           return  res.send({accessToken: token})
+        } 
+        res.status(401).send({accessToken: ""})
+        
+        // res.send({accessToken: "token"})
+    } catch (error) {
+        console.log(error.message);
+    }
+})
+
+
 
 
 app.put('/users' , async(req , res)=>{
@@ -101,18 +159,18 @@ try {
 })
 
 
-app.get('/users/allSellers' , async(req , res)=>{
-   try {
-    const query = {}
-    const users = await usersCollection.find(query).toArray()
-    const allSellers =  users.filter(user => user.role === "Seller Accout")
+// app.get('/users/allSellers' , async(req , res)=>{
+//    try {
+//     const query = {}
+//     const users = await usersCollection.find(query).toArray()
+//     const allSellers =  users.filter(user => user.role === "Seller Accout")
     
-    res.send(allSellers)
-   } catch (error) {
-    console.log(error.message);
-   }
+//     res.send(allSellers)
+//    } catch (error) {
+//     console.log(error.message);
+//    }
     
-})
+// })
 
 //  verify a seller
 app.put('/users/allsellers/verified/:id' , async(req , res)=>{
@@ -136,15 +194,18 @@ app.put('/users/allsellers/verified/:id' , async(req , res)=>{
 
 ////////////////////
 
+// search particular seller for verified or not
 app.get('/sellers' , async(req , res)=>{
     const sellers = await usersCollection.findOne({email: req.query.email})
     res.send(sellers)
 })
-
+// //////
 
 
 //  //////////////
-app.get('/users/allBuyrs' , async(req , res)=>{
+//     ADMIN API   ////////////////////////////////
+
+app.get('/users/allBuyrs' ,verifyJwt ,verifyAdmin ,async(req , res)=>{
    try {
     const query = {}
     const users = await usersCollection.find(query).toArray()
@@ -157,6 +218,23 @@ app.get('/users/allBuyrs' , async(req , res)=>{
    }
     
 })
+
+
+app.get('/users/allSellers',  verifyJwt, verifyAdmin,async(req , res)=>{
+    try {
+     const query = {}
+     const users = await usersCollection.find(query).toArray()
+     const allSellers =  users.filter(user => user.role === "Seller Accout")
+     
+     res.send(allSellers)
+    } catch (error) {
+     console.log(error.message);
+    }
+     
+ })
+
+// admin api end
+
 
 
 // sellers products 
@@ -228,11 +306,76 @@ app.delete('/sellers/product/delete/:id' , async(req , res)=>{
 })
 
 
-app.get('/users/orders' , async(req , res)=>{
+app.get('/users/orders' , verifyJwt,async(req , res)=>{
+   
+  try {
+    const decodedEmail = req.decoded.email;
+    const email = req.query.email;
+    if(decodedEmail !== email){
+      return   res.status(401).send({message: "unauthorized access"})
+    }
     const userSpecificOrders = await ordersCollection.find({buyrEmail: req.query.email}).toArray()
 
     res.send(userSpecificOrders)
+  } catch (error) {
+    console.log(error.message);
+  }
 })
+
+
+app.get('/orderProducts/payment/:id' , async(req , res)=>{
+    const id = req.params.id;
+    const query ={_id: ObjectId(id)}
+    const  orderedProduct = await ordersCollection.findOne(query)
+    res.send(orderedProduct)
+})
+
+
+
+/////////stripe implement
+
+// app.post('/create-payment-intent' , async(req , res)=>{
+//     try {
+//         const booking = req.body;
+//     const price = parseFloat(booking.price);
+//     const amount = price * 100;
+    
+//     const paymentIntent = await stripe.paymentIntents.create({
+//         currency: 'inr',
+//         amount: amount,
+//         "payment_method_types": [
+//             "card"
+//         ]
+//     })
+//     res.send({
+//         clientSecret: paymentIntent.client_secret,
+//       });
+//     } catch (error) {
+//         console.log(error.message);
+//     }
+// } )
+
+// app.post('/payments' , async(req , res)=>{
+//     try {
+//         const booking = req.body;
+//     const price = parseFloat(booking.price);
+//     const amount = price * 100;
+    
+//     const paymentIntent = await stripe.paymentIntents.create({
+//         currency: 'inr',
+//         amount: amount,
+//         "payment_method_types": [
+//             "card"
+//         ]
+//     })
+//     res.send({
+//         clientSecret: paymentIntent.client_secret,
+//       });
+//     } catch (error) {
+//       console.log(error.message);   
+//     }
+// })
+
 
 
 
