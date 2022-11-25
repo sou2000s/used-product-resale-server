@@ -228,6 +228,12 @@ app.delete('/sellers/product/delete/:id' , async(req , res)=>{
 })
 
 
+app.get('/users/orders' , async(req , res)=>{
+    const userSpecificOrders = await ordersCollection.find({buyrEmail: req.query.email}).toArray()
+
+    res.send(userSpecificOrders)
+})
+
 
 
 dbConnect()
