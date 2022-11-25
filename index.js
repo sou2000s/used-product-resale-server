@@ -1,9 +1,11 @@
 const express = require('express')
-require('dotenv').config()
 const app = express()
 const cors = require("cors")
 const port = process.env.PORT || 5000
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+require('dotenv').config()
 const jwt = require('jsonwebtoken')
+const stripe = require('stripe')(process.env.STRIPE_SECRET) 
 
 app.use(express.json())
 app.use(cors())
@@ -33,7 +35,6 @@ const verifyJwt = async (req , res , next) =>{
 
 
 
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.x7kxg5y.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -43,7 +44,7 @@ const usersCollection = client.db('UsedProductDatabase').collection('users')
 const productsCollection = client.db('UsedProductDatabase').collection('products')
 const categoriesCollection = client.db('UsedProductDatabase').collection('categories')
 const ordersCollection = client.db('UsedProductDatabase').collection('orders')
-
+const paymentCollection = client.db('UsedProductDatabase').collection('payments')
 
 
 
@@ -334,47 +335,51 @@ app.get('/orderProducts/payment/:id' , async(req , res)=>{
 
 /////////stripe implement
 
-// app.post('/create-payment-intent' , async(req , res)=>{
-//     try {
-//         const booking = req.body;
-//     const price = parseFloat(booking.price);
-//     const amount = price * 100;
+app.post('/create-payment-intent' , async(req , res)=>{
+    try {
+        const booking = req.body;
+    const price = booking.priceIntoNumber;
+    const amount = price * 100;
     
-//     const paymentIntent = await stripe.paymentIntents.create({
-//         currency: 'inr',
-//         amount: amount,
-//         "payment_method_types": [
-//             "card"
-//         ]
-//     })
-//     res.send({
-//         clientSecret: paymentIntent.client_secret,
-//       });
-//     } catch (error) {
-//         console.log(error.message);
-//     }
-// } )
+    const paymentIntent = await stripe.paymentIntents.create({
+        currency: 'inr',
+        amount: amount,
+        "payment_method_types": [
+            "card"
+        ]
+    })
+    res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    } catch (error) {
+        console.log(error.message);
+    }
+} )
 
-// app.post('/payments' , async(req , res)=>{
-//     try {
-//         const booking = req.body;
-//     const price = parseFloat(booking.price);
-//     const amount = price * 100;
-    
-//     const paymentIntent = await stripe.paymentIntents.create({
-//         currency: 'inr',
-//         amount: amount,
-//         "payment_method_types": [
-//             "card"
-//         ]
-//     })
-//     res.send({
-//         clientSecret: paymentIntent.client_secret,
-//       });
-//     } catch (error) {
-//       console.log(error.message);   
-//     }
-// })
+app.post('/payments' , async(req , res)=>{
+    const payment = req.body;
+    const result = await paymentCollection.insertOne(payment)
+    const id = payment.bookingId;
+    const UpdateProductsCollectionfilter = {_id:ObjectId(id)}
+    const ordersCollectionUpdateFilter = { produtId: id }
+    const updatedDoc = {
+        $set:{
+            paid:true,
+            trnsactionId: payment.transactionId
+        }
+    }
+    const updatedResult = await ordersCollection.updateOne(ordersCollectionUpdateFilter , updatedDoc)
+    const updatedProductsCollection = await productsCollection.updateOne(UpdateProductsCollectionfilter,updatedDoc)
+    res.send(result)
+})
+
+
+
+
+///////// stripe end
+
+
+
 
 app.delete('/sellerProducts/delete' , async(req , res)=>{
     try {
@@ -393,6 +398,19 @@ app.delete('/sellerProducts/delete' , async(req , res)=>{
 dbConnect()
 
 
+
+// /////payments related routes
+
+app.get('/orderdProduct/:id' , async(req , res)=>{
+    try {
+        const id = req.params.id
+        const query = {_id: ObjectId(id)}
+        const singleOrderdProduct = await ordersCollection.findOne(query)
+        res.send(singleOrderdProduct)
+    } catch (error) {
+        
+    }
+})
 
 
 
