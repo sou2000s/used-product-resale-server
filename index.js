@@ -45,7 +45,7 @@ const productsCollection = client.db('UsedProductDatabase').collection('products
 const categoriesCollection = client.db('UsedProductDatabase').collection('categories')
 const ordersCollection = client.db('UsedProductDatabase').collection('orders')
 const paymentCollection = client.db('UsedProductDatabase').collection('payments')
-
+const advertiseCollection = client.db('UsedProductDatabase').collection('advertisements')
 
 
 const dbConnect = async ()=>{
@@ -149,9 +149,9 @@ app.post('/orders' , async(req , res)=>{
 })
 
 
-app.post('/products' , async(req , res)=>{
+app.post('/products',async(req , res)=>{
 try {
-    const product = req.body
+    const product = req.body;
     const adededProduct = await productsCollection.insertOne(product)
     res.send(adededProduct)
 } catch (error) {
@@ -181,7 +181,7 @@ app.put('/users/allsellers/verified/:id' , async(req , res)=>{
     const options = {upsert: true}
     const updatedDoc = {
         $set: {
-            verified: "verified"
+            status: "verified"
         }
 
     }
@@ -362,6 +362,7 @@ app.post('/payments' , async(req , res)=>{
     const id = payment.bookingId;
     const UpdateProductsCollectionfilter = {_id:ObjectId(id)}
     const ordersCollectionUpdateFilter = { produtId: id }
+    const advertiseCollectionUpdateFilter = {productId: id}
     const updatedDoc = {
         $set:{
             paid:true,
@@ -370,6 +371,7 @@ app.post('/payments' , async(req , res)=>{
     }
     const updatedResult = await ordersCollection.updateOne(ordersCollectionUpdateFilter , updatedDoc)
     const updatedProductsCollection = await productsCollection.updateOne(UpdateProductsCollectionfilter,updatedDoc)
+    const advertiseCollectionUpdate = await advertiseCollection.updateOne(advertiseCollectionUpdateFilter , updatedDoc)
     res.send(result)
 })
 
@@ -414,6 +416,18 @@ app.get('/orderdProduct/:id' , async(req , res)=>{
 
 
 
+
+// //// advertisement
+
+app.post('/advertise' , async(req , res )=>{
+    try {
+        const advertise = req.body;
+        const insertAadvertise = await advertiseCollection.insertOne(advertise)
+        res.send(insertAadvertise)
+    } catch (error) {
+        console.log(error.messsage);
+    }
+})
 
 
 
