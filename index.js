@@ -149,7 +149,7 @@ app.post('/orders' , async(req , res)=>{
 })
 
 
-app.post('/products',async(req , res)=>{
+app.post('/products', verifyJwt,async(req , res)=>{
 try {
     const product = req.body;
     const adededProduct = await productsCollection.insertOne(product)
@@ -158,6 +158,8 @@ try {
      console.log(error.message);
 }
 })
+
+
 
 
 // app.get('/users/allSellers' , async(req , res)=>{
@@ -361,8 +363,9 @@ app.post('/payments' , async(req , res)=>{
     const result = await paymentCollection.insertOne(payment)
     const id = payment.bookingId;
     const UpdateProductsCollectionfilter = {_id:ObjectId(id)}
-    const ordersCollectionUpdateFilter = { produtId: id }
-    const advertiseCollectionUpdateFilter = {productId: id}
+    const ordersCollectionUpdateFilter = { productId: id }
+    console.log(id);
+    const advertiseCollectionUpdateFilter = {productId : id}
     const updatedDoc = {
         $set:{
             paid:true,
@@ -371,7 +374,9 @@ app.post('/payments' , async(req , res)=>{
     }
     const updatedResult = await ordersCollection.updateOne(ordersCollectionUpdateFilter , updatedDoc)
     const updatedProductsCollection = await productsCollection.updateOne(UpdateProductsCollectionfilter,updatedDoc)
+    const deleteProductFromproductsCollection = await productsCollection.deleteOne(UpdateProductsCollectionfilter)
     const advertiseCollectionUpdate = await advertiseCollection.updateOne(advertiseCollectionUpdateFilter , updatedDoc)
+    const advertiseCollectionDeletetheProduct = await advertiseCollection.deleteOne(advertiseCollectionUpdateFilter)
     res.send(result)
 })
 
@@ -397,7 +402,7 @@ app.delete('/sellerProducts/delete' , async(req , res)=>{
 
 
 
-dbConnect()
+
 
 
 
@@ -430,7 +435,10 @@ app.post('/advertise' , async(req , res )=>{
 })
 
 
-
+app.get('/advertiseProducts' , async(req , res)=>{
+    const products = await advertiseCollection.find({}).toArray()
+    res.send(products)
+})
 
 
 
@@ -439,6 +447,7 @@ app.get('/' , (req , res)=>{
 })
 
 
+dbConnect()
 
 
 app.listen(port, ()=>{
