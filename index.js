@@ -46,7 +46,7 @@ const categoriesCollection = client.db('UsedProductDatabase').collection('catego
 const ordersCollection = client.db('UsedProductDatabase').collection('orders')
 const paymentCollection = client.db('UsedProductDatabase').collection('payments')
 const advertiseCollection = client.db('UsedProductDatabase').collection('advertisements')
-
+const reportItemCollection = client.db('UsedProductDatabase').collection('items')
 
 const dbConnect = async ()=>{
     try {
@@ -443,6 +443,48 @@ app.get('/advertiseProducts' , async(req , res)=>{
     const products = await advertiseCollection.find({}).toArray()
     res.send(products)
 })
+
+
+// ////// report api
+
+app.put('/reportItem' , async(req , res)=>{
+    try {
+        const product = req.body;
+        const  reportedProduct = await reportItemCollection.insertOne(product)
+        res.send(reportedProduct)
+    } catch (error) {
+        console.log(error.message);
+    }
+})
+
+
+app.get('/reported-item-admin' , async(req , res)=>{
+    try {
+        const query = {}
+        const reportedProducts = await reportItemCollection.find(query).toArray()
+        res.send(reportedProducts)
+    } catch (error) {
+        console.log(error.message);
+    }
+})
+
+app.delete('/reportProduct-delete/:id' , async(req , res)=>{
+   try {
+    const id = req.params.id;
+    const reportCollectionquery = {productId: id}
+    const updatedDoc = {
+        $set:{
+            deleted: true
+        }
+    }
+    const productCollectionQuery = {_id: ObjectId(id)}
+    const deleteProduct = await productsCollection.deleteOne(productCollectionQuery)
+    const deleteFromReportCollection = await reportItemCollection.updateOne(reportCollectionquery , updatedDoc)
+    res.send(deleteProduct)
+   } catch (error) {
+    console.log(error.message);
+   }
+    })
 
 
 
