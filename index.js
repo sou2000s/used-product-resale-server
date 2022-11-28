@@ -278,23 +278,23 @@ app.delete('/users/allBuyrs/:id' , async(req , res)=>{
 })
 
 
-app.put('/sellers/products/update/:id' , async(req , res)=>{
-   try {
-    const id = req.params.id
-    const filter = {_id: ObjectId(id)}
-    const options = {upsert: true}
-    const updatedDoc ={
-        $set:{
-            status: "sold"
-        }
-    }
+// app.put('/sellers/products/update/:id' , async(req , res)=>{
+//    try {
+//     const id = req.params.id
+//     const filter = {_id: ObjectId(id)}
+//     const options = {upsert: true}
+//     const updatedDoc ={
+//         $set:{
+//             status: "sold"
+//         }
+//     }
 
-    const result = await productsCollection.updateOne(filter , updatedDoc , options)
-    res.send(result)
-   } catch (error) {
-    console.log(error.message);
-   }
-})
+//     const result = await productsCollection.updateOne(filter , updatedDoc , options)
+//     res.send(result)
+//    } catch (error) {
+//     console.log(error.message);
+//    }
+// })
 
 
 app.delete('/sellers/product/delete/:id' , async(req , res)=>{
@@ -302,6 +302,10 @@ app.delete('/sellers/product/delete/:id' , async(req , res)=>{
     const  id = req.params.id
     const query = {_id: ObjectId(id)}
     const restProducts = await productsCollection.deleteOne(query)
+    const advertiseFilter = {
+        productId : id
+        }
+    const deleteFromAdvertiseCollection = await advertiseCollection.deleteOne(advertiseFilter)    
     res.send(restProducts)
     } catch (error) {
          console.log(error.message);
@@ -374,7 +378,7 @@ app.post('/payments' , async(req , res)=>{
     }
     const updatedResult = await ordersCollection.updateOne(ordersCollectionUpdateFilter , updatedDoc)
     const updatedProductsCollection = await productsCollection.updateOne(UpdateProductsCollectionfilter,updatedDoc)
-    const deleteProductFromproductsCollection = await productsCollection.deleteOne(UpdateProductsCollectionfilter)
+    // const deleteProductFromproductsCollection = await productsCollection.deleteOne(UpdateProductsCollectionfilter)
     const advertiseCollectionUpdate = await advertiseCollection.updateOne(advertiseCollectionUpdateFilter , updatedDoc)
     const advertiseCollectionDeletetheProduct = await advertiseCollection.deleteOne(advertiseCollectionUpdateFilter)
     res.send(result)
